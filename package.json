@@ -2,7 +2,7 @@
   "name": "roam2github",
   "version": "1.0.6",
   "description": "Automatic Roam Research backups",
-  "main": "roam2github.js",
+  "main": "backup.js",
   "dependencies": {
     "dotenv": "^8.2.0",
     "edn-formatter": "everruler12/edn-formatter",
@@ -13,7 +13,6 @@
   },
   "devDependencies": {},
   "scripts": {
-    "start": "node roam2github.js",
     "backup": "node backup.js"
   },
   "repository": {
