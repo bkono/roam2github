@@ -47,7 +47,7 @@ const backup_types = [
 });
 // what about specifying filetype for each graph? Maybe use settings.json in root of repo. But too complicated for non-programmers to set up.
 
-const md_replacement = MD_REPLACEMENT || "�";
+const md_replacement = MD_REPLACEMENT || "";
 
 const md_skip_blanks =
   (MD_SKIP_BLANKS && MD_SKIP_BLANKS.toLowerCase()) === "false" ? false : true;
@@ -373,9 +373,9 @@ async function roam_export(page, filetype, download_dir) {
       });
 
       log("- Waiting for download to start");
-      await page.waitForSelector(".bp3-spinner");
+      await page.waitForSelector(".bp3-spinner", { timeout: 60000 }); // 60 seconds timeout
 
-      await page.waitForSelector(".bp3-spinner", { hidden: true });
+      await page.waitForSelector(".bp3-spinner", { hidden: true, timeout: 60000 }); // 60 seconds timeout
       log("- Downloading");
 
       await waitForDownload(download_dir);
@@ -389,22 +389,30 @@ async function roam_export(page, filetype, download_dir) {
 
 function waitForDownload(download_dir) {
   return new Promise(async (resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error("Download timeout: 1 minute elapsed"));
+    }, 60000); // 1 minute timeout
+
     try {
-      checkDownloads();
-
-      async function checkDownloads() {
-        const files = await fs.readdir(download_dir);
-        const file = files[0];
-
-        if (file && file.match(/\.zip$/)) {
-          // checks for .zip file
-
-          log(file, "downloaded!");
-          resolve();
-        } else checkDownloads();
-      }
+      await checkDownloads();
+      clearTimeout(timeout);
+      resolve();
     } catch (err) {
+      clearTimeout(timeout);
       reject(err);
+    }
+
+    async function checkDownloads() {
+      const files = await fs.readdir(download_dir);
+      const file = files[0];
+
+      if (file && file.match(/\.zip$/)) {
+        // checks for .zip file
+        log(file, "downloaded!");
+        resolve();
+      } else {
+        setTimeout(checkDownloads, 1000); // check again after 1 second
+      }
     }
   });
 }
