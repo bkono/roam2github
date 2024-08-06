@@ -38,7 +38,7 @@ const graph_names = ROAM_GRAPH.split(/,|\n/) // comma or linebreak separator
 const backup_types = [
   { type: "JSON", backup: BACKUP_JSON },
   { type: "EDN", backup: BACKUP_EDN },
-  { type: "Markdown", backup: BACKUP_MARKDOWN },
+  { type: "Flat Markdown", backup: BACKUP_MARKDOWN },
 ].map((f) => {
   f.backup === undefined || f.backup.toLowerCase() === "true"
     ? (f.backup = true)
@@ -135,7 +135,7 @@ async function init() {
           const download_dir = path.join(
             tmp_dir,
             graph_name,
-            f.type.toLowerCase()
+            f.type.toLowerCase().replace(" ", "_")
           );
           await page._client.send("Page.setDownloadBehavior", {
             behavior: "allow",
@@ -478,7 +478,7 @@ async function format_and_save(filetype, download_dir, graph_name) {
 
       if (files.length === 0) reject("Extraction error: extract_dir is empty");
 
-      if (filetype == "Markdown") {
+      if (filetype == "Markdown" || filetype == "Flat Markdown") {
         const markdown_dir = path.join(backup_dir, "markdown", graph_name);
         const formatted_dir = path.join(backup_dir, "formatted", graph_name);
 
