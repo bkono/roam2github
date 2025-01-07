@@ -36,9 +36,9 @@ const graph_names = ROAM_GRAPH.split(/,|\n/) // comma or linebreak separator
 // can also check "Not a valid name. Names can only contain letters, numbers, dashes and underscores." message that Roam gives when creating a new graph
 
 const backup_types = [
-  { type: "JSON", backup: BACKUP_JSON },
-  { type: "EDN", backup: BACKUP_EDN },
-  { type: "Flat Markdown", backup: BACKUP_MARKDOWN },
+  { type: "JSON", backup: BACKUP_JSON, extension: ".json" },
+  { type: "EDN", backup: BACKUP_EDN, extension: ".edn" },
+  { type: "Flat Markdown", backup: BACKUP_MARKDOWN, extension: ".md" },
 ].map((f) => {
   f.backup === undefined || f.backup.toLowerCase() === "true"
     ? (f.backup = true)
@@ -143,12 +143,14 @@ async function init() {
           });
 
           log("Export", f.type);
-          await roam_export(page, f.type, download_dir);
+          await roam_export(page, f.type, download_dir, f.extension);
 
-          log("Extract");
-          await extract_file(download_dir);
+          if (f.extension == ".zip") {
+            log("Extract");
+            await extract_file(download_dir, f.extension);
+          }
 
-          await format_and_save(f.type, download_dir, graph_name);
+          await format_and_save(f.type, f.extension, download_dir, graph_name);
           // TODO run download and formatting operations asynchronously. Can be done since json and edn are same as graph name.
           // Await for counter expecting total operations to be done graph_names.length * backup_types.filter(f=>f.backup).length
           // or Promises.all(arr) where arr is initiated outside For loop, and arr.push result of format_and)_save
@@ -274,7 +276,7 @@ async function roam_open_graph(page, graph_name) {
   });
 }
 
-async function roam_export(page, filetype, download_dir) {
+async function roam_export(page, filetype, download_dir, extension) {
   return new Promise(async (resolve, reject) => {
     try {
       await fs.ensureDir(download_dir);
@@ -378,7 +380,7 @@ async function roam_export(page, filetype, download_dir) {
       await page.waitForSelector(".bp3-spinner", { hidden: true, timeout: 60000 }); // 60 seconds timeout
       log("- Downloading");
 
-      await waitForDownload(download_dir);
+      await waitForDownload(download_dir, extension);
 
       resolve();
     } catch (err) {
@@ -387,7 +389,7 @@ async function roam_export(page, filetype, download_dir) {
   });
 }
 
-function waitForDownload(download_dir) {
+function waitForDownload(download_dir, extension) {
   return new Promise(async (resolve, reject) => {
     const timeout = setTimeout(() => {
       reject(new Error("Download timeout: 1 minute elapsed"));
@@ -406,7 +408,7 @@ function waitForDownload(download_dir) {
       const files = await fs.readdir(download_dir);
       const file = files[0];
 
-      if (file && file.match(/\.zip$/)) {
+      if (file && file.match(extension)) {
         // checks for .zip file
         log(file, "downloaded!");
         resolve();
@@ -417,7 +419,7 @@ function waitForDownload(download_dir) {
   });
 }
 
-async function extract_file(download_dir) {
+async function extract_file(download_dir, extension) {
   return new Promise(async (resolve, reject) => {
     try {
       const files = await fs.readdir(download_dir);
@@ -428,7 +430,7 @@ async function extract_file(download_dir) {
 
       const file = files[0];
 
-      if (!file.match(/\.zip$/)) reject("Extraction error: .zip not found");
+      if (!file.match(extension)) reject("Extraction error: " + extension + " not found");
 
       const file_fullpath = path.join(download_dir, file);
       const extract_dir = path.join(download_dir, "_extraction");
@@ -469,10 +471,10 @@ async function extract_file(download_dir) {
   });
 }
 
-async function format_and_save(filetype, download_dir, graph_name) {
+async function format_and_save(filetype, extension, download_dir, graph_name) {
   return new Promise(async (resolve, reject) => {
     try {
-      const extract_dir = path.join(download_dir, "_extraction");
+      const extract_dir = extension == ".zip" ? path.join(download_dir, "_extraction") : download_dir;
 
       const files = await fs.readdir(extract_dir);
 
