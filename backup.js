@@ -17,8 +17,9 @@ const {
   ROAM_EMAIL,
   ROAM_PASSWORD,
   ROAM_GRAPH,
-  BACKUP_JSON,
   BACKUP_EDN,
+  BACKUP_FLAT_MARKDOWN,
+  BACKUP_JSON,
   BACKUP_MARKDOWN,
   MD_REPLACEMENT,
   MD_SKIP_BLANKS,
@@ -38,7 +39,8 @@ const graph_names = ROAM_GRAPH.split(/,|\n/) // comma or linebreak separator
 const backup_types = [
   { type: "JSON", backup: BACKUP_JSON, extension: ".json" },
   { type: "EDN", backup: BACKUP_EDN, extension: ".edn" },
-  { type: "Flat Markdown", backup: BACKUP_MARKDOWN, extension: ".md" },
+  { type: "Flat Markdown", backup: BACKUP_FLAT_MARKDOWN, extension: ".md" },
+  { type: "Markdown", backup: BACKUP_MARKDOWN, extension: ".zip" },
 ].map((f) => {
   f.backup === undefined || f.backup.toLowerCase() === "true"
     ? (f.backup = true)
